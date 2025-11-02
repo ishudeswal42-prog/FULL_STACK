@@ -1,0 +1,45 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+
+const app = express();
+app.use(bodyParser.json());
+
+mongoose.connect('mongodb://localhost:27017/bankDB', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => console.log('MongoDB Connected')).catch(err => console.log(err));
+
+const accountSchema = new mongoose.Schema({
+  name: String,
+  balance: Number
+});
+
+const Account = mongoose.model('Account', accountSchema);
+
+app.post('/create', async (req, res) => {
+  const { name, balance } = req.body;
+  const account = new Account({ name, balance });
+  await account.save();
+  res.json({ message: 'Account created', account });
+});
+
+app.post('/transfer', async (req, res) => {
+  const { sender, receiver, amount } = req.body;
+  const senderAcc = await Account.findOne({ name: sender });
+  const receiverAcc = await Account.findOne({ name: receiver });
+  if (!senderAcc || !receiverAcc) return res.status(404).json({ message: 'Account not found' });
+  if (senderAcc.balance < amount) return res.status(400).json({ message: 'Insufficient balance' });
+  senderAcc.balance -= amount;
+  receiverAcc.balance += amount;
+  await senderAcc.save();
+  await receiverAcc.save();
+  res.json({ message: 'Transfer successful', senderBalance: senderAcc.balance, receiverBalance: receiverAcc.balance });
+});
+
+app.get('/accounts', async (req, res) => {
+  const accounts = await Account.find();
+  res.json(accounts);
+});
+
+app.listen(3000, () => console.log('Server running at http://localhost:3000'));
