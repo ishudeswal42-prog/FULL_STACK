@@ -1,0 +1,68 @@
+mkdir product-crud
+cd product-crud
+npm init -y
+npm install express mongoose dotenv
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const Product = require("./models/Product");
+
+const app = express();
+app.use(express.json());
+
+// Connect DB
+mongoose.connect(process.env.MONGO_URL)
+.then(() => console.log("MongoDB Connected"))
+.catch(err => console.log(err));
+
+// CREATE
+app.post("/product", async (req, res) => {
+    try {
+        const product = await Product.create(req.body);
+        res.json(product);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// READ
+app.get("/product", async (req, res) => {
+    res.json(await Product.find());
+});
+
+// UPDATE
+app.put("/product/:id", async (req, res) => {
+    try {
+        res.json(await Product.findByIdAndUpdate(req.params.id, req.body, { new: true }));
+    } catch (err) {
+        res.status(400).json({ error: "Invalid ID" });
+    }
+});
+
+// DELETE
+app.delete("/product/:id", async (req, res) => {
+    try {
+        await Product.findByIdAndDelete(req.params.id);
+        res.json({ message: "Product deleted" });
+    } catch (err) {
+        res.status(400).json({ error: "Invalid ID" });
+    }
+});
+
+app.listen(3000, () => console.log("Server running on 3000"));
+const mongoose = require("mongoose");
+
+const productSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+    category: { type: String, required: true }
+});
+
+module.exports = mongoose.model("Product", productSchema);
+MONGO_URL=your_mongodb_connection_string
+{
+  "name": "Laptop",
+  "price": 55000,
+  "category": "Electronics"
+}
+node server.js
